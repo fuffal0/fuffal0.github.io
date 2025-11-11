@@ -457,7 +457,7 @@
             </div>
             <div class="control-group">
                 <label for="varA">Variable A (Custom Length in Feet):</label>
-                <input type="number" id="varA" value="12">
+                <input type="number" id="varA" value="12" disabled>
                 <span class="unit-display" id="varAUnitDisplay">144.00 in. (Used in calculation)</span>
             </div>
             
@@ -579,7 +579,6 @@
         const varBInput = document.getElementById('varB');
         const varBUnitDisplay = document.getElementById('varBUnit');
         const varCInput = document.getElementById('varC'); // Now displays Number of Spaces
-        // const varC_FixedEndInput is REMOVED
         const edgeFactorSelect = document.getElementById('edgeFactorSelect');
         const varXInput = document.getElementById('varX');
         const varXUnitDisplay = document.getElementById('varXUnit');
@@ -606,6 +605,18 @@
         window.addEventListener('resize', updateVisualization);
         // --- END Event Listener ---
         
+        // **NEW FUNCTION to control Variable A input state**
+        function toggleVarAInputState() {
+            const isCustom = lengthSourceSelect.value === 'custom';
+            varAInput.disabled = !isCustom;
+        }
+        
+        // Attach the new toggle function to the dropdown change event
+        lengthSourceSelect.addEventListener('change', toggleVarAInputState);
+        // Run it on load to set the initial state (which is '10ft' selected, so it should be disabled)
+        document.addEventListener('DOMContentLoaded', toggleVarAInputState);
+
+
         /**
          * Converts decimal inches to the nearest fractional representation.
          */
@@ -769,8 +780,8 @@
         }
         
         // Attach event listeners
-        // NOTE: varC_FixedEndInput is removed from inputsToListen
         const inputsToListen = [lengthSourceSelect, varAInput, edgeFactorSelect, formulaSelect, itemWidthsInput, manualSolutionCountInput, signageToggle, itemGapsInput]; 
+        // Note: toggleVarAInputState is attached above for immediate control.
         inputsToListen.forEach(input => input.addEventListener('change', updateVisualization));
         visualizeBtn.addEventListener('click', updateVisualization);
         
@@ -788,7 +799,6 @@
         // -------------------------------------------------------------------
         /**
          * Calculates the array of space widths based on the selected formula and variables.
-         * Note: FixedCEnd parameter has been removed.
          */
         function calculateSpacing(A_inches, B_totalWidth, numSolutions, formulaId, edgeFactorOption) {
             
@@ -848,7 +858,6 @@
                 }
                 
             } 
-            // Removed Formula 2 and Formula 3 logic.
             
             // Handle the "no solutions" case
             if (numSolutions === 0) {
@@ -1018,15 +1027,14 @@
 
             if (source === '10ft') {
                 A_feet = SET_LENGTH_FEET;
-                varAInput.disabled = true;
-                varAInput.value = A_feet;
+                // varAInput.disabled = true; // This is now handled by toggleVarAInputState listener
+                // varAInput.value is used as display value, calculation uses SET_LENGTH_FEET
             } else { 
                 A_feet = parseFloat(varAInput.value);
-                varAInput.disabled = false;
+                // varAInput.disabled = false; // This is now handled by toggleVarAInputState listener
             }
             
             const A_inches = convertFeetToInches(A_feet);
-            // NOTE: Fixed C is no longer taken from an input, as it's determined by Edge Factor.
             const edgeFactorOption = edgeFactorSelect.value; // Store the option string
             const selectedFormula = formulaSelect.value; 
 
@@ -1089,7 +1097,6 @@
 
 
             // 4. Calculate spacing (X)
-            // Call calculateSpacing WITHOUT the fixedCEnd parameter
             const result = calculateSpacing(A_inches, B_totalWidth, numSolutionGroups, selectedFormula, edgeFactorOption);
 
             if (result === null) {
