@@ -1007,7 +1007,7 @@
             } else if (type === 'item-sign-gap') {
                  labelText = `Gap: ${SIGN_ITEM_GAP_INCHES.toFixed(0)}"`
             } else if (type === 'space') {
-                 // CRITICAL FIX: Only include inches on mobile
+                 // FIX APPLIED HERE: Correctly branch based on the isMobile flag
                  if (isMobile) {
                       // Only show inches on narrow screens
                       labelText = `${widthInches.toFixed(2)}"`
