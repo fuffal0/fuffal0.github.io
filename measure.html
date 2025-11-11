@@ -121,12 +121,13 @@
             padding: 10px 0;
             border-top: 1px dotted #e0e0e0;
             margin-top: 5px;
-            display: none; 
+            /* Re-enabling the toggle, hiding the obsolete inputs */
+            display: flex; 
             flex-direction: column;
             gap: 10px;
         }
-        .signage-options.active {
-            display: flex;
+        .signage-options .hidden-control {
+            display: none;
         }
         #visualizeBtn {
             padding: 10px 20px;
@@ -167,9 +168,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             overflow: auto; 
-            /* REMOVE ABSOLUTE POSITIONING */
             position: relative;
-            /* REMOVE TOP PADDING */
             padding-top: 20px; 
             user-select: none; 
         }
@@ -185,14 +184,15 @@
             width: 100%;
             height: 150px; 
             display: flex;
-            align-items: center;
+            /* CRUCIAL FIX: Align all items to the bottom baseline */
+            align-items: flex-end; 
             background-color: #ecf0f1;
             border: 2px solid #bdc3c7;
             border-radius: 5px;
             box-sizing: border-box;
         }
         /* Universal box-sizing for visual elements */
-        .item, .space, .signage, .sign-gap, .circle-sign, .rectangle-item, .item-sign-gap {
+        .item, .space, .signage, .sign-gap, .circle-sign, .rectangle-item, .item-sign-gap, .internal-gap {
             box-sizing: border-box;
             display: flex;
             justify-content: center;
@@ -218,6 +218,8 @@
         .space {
             background-color: #b3cde0; 
             height: 50px;
+            /* Ensure space block starts at the bottom baseline */
+            align-self: flex-end; 
             align-items: flex-start;
         }
         
@@ -246,6 +248,29 @@
             background-color: transparent; 
             height: 100%;
         }
+        
+        /* UPDATED: Styling for the gap between items inside a solution group (D) */
+        .internal-gap {
+            background-color: #d1e2c4; /* Soft green/yellow for visibility */
+            height: 50px; 
+            opacity: 0.9; 
+            /* CRUCIAL FIX: Align the internal gap block to the BOTTOM baseline */
+            align-self: flex-end; 
+            align-items: flex-start;
+        }
+        .internal-gap span {
+            /* High contrast text against the light background */
+            font-size: 10px;
+            color: #000; /* Black text for readability */
+            padding: 2px 4px;
+            background: #fff; /* White background for text chip */
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            /* NEW FIX: Lift the label much higher than the default -20px */
+            top: -55px; 
+            transform: none; 
+        }
+
 
         /* Hide old signage elements */
         .signage, .sign-gap {
@@ -254,7 +279,7 @@
 
 
         /* The span inside every measurement block is the target for inverse scaling */
-        .item span, .space span, .circle-sign span, .rectangle-item span, .item-sign-gap span {
+        .item span, .space span, .circle-sign span, .rectangle-item span, .item-sign-gap span, .internal-gap span {
             padding: 5px;
             background: rgba(0,0,0,0.2);
             border-radius: 3px;
@@ -277,7 +302,6 @@
             background: rgba(255, 255, 255, 0.9);
             color: #222;
             padding: 2px 4px;
-            border-radius: 3px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.15);
         }
 
@@ -309,11 +333,11 @@
         }
 
         /* Base transform set to identity. JS will handle scaling and offsetting. */
-        .rectangle-item span, .space span, .circle-sign span, .item-sign-gap span {
+        .rectangle-item span, .space span, .circle-sign span, .item-sign-gap span, .internal-gap span {
             transform: none; 
         }
         
-        /* --- Zoom Controls Styling (Now independent of the visualization container) --- */
+        /* Zoom Controls Styling */
         .zoom-controls {
             /* Inherit the card styling for its own area */
             padding: 15px 20px;
@@ -350,17 +374,18 @@
         }
 
         /* === Range Slider Styling for Improved Touch === */
+        /* Target the THUMB (the draggable handle) across different browsers */
         #zoomSlider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 25px;   
-            height: 25px; 
+            width: 25px;   /* Make the thumb wider */
+            height: 25px;  /* Make the thumb taller */
             border-radius: 50%;
             background: #007aff;
             cursor: pointer;
             border: 2px solid #fff; 
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-            margin-top: -8px; 
+            margin-top: -8px; /* Correctly center the thumb vertically on the track */
         }
         
         #zoomSlider::-moz-range-thumb {
@@ -371,7 +396,8 @@
             border: 2px solid #fff;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
         }
-        
+
+        /* Target the TRACK (the bar the thumb slides on) for better visual feedback */
         #zoomSlider::-webkit-slider-runnable-track {
             height: 10px; 
             border-radius: 5px;
@@ -412,35 +438,42 @@
             </div>
             
             <div class="control-group">
-                <label for="manualSolutionCount">2. Total Number of Solutions:</label>
-                <input type="number" id="manualSolutionCount" value="4" min="0">
-                <p class="warning-text">If > item pattern count, item widths will repeat.</p>
+                <label for="manualSolutionCount">2. Total Number of Solution Groups:</label>
+                <input type="number" id="manualSolutionCount" value="3" min="0">
+                <p class="warning-text">Enter the number of groups you want.</p>
             </div>
             
             <div class="control-group">
-                <label for="itemWidthsInput">3. Item Widths (in inches) [Input Pattern]:</label>
-                <input type="text" id="itemWidthsInput" value="12, 20, 15, 12">
+                <label for="itemWidthsInput">3. Item Pattern (e.g., 12,20; 10; 12,15):</label>
+                <input type="text" id="itemWidthsInput" value="12,20; 10; 12,15">
+                <p class="warning-text">Enter item widths separated by commas. Use ';' to divide them into groups matching the count above.</p>
+            </div>
+            
+            <div class="control-group">
+                <label for="itemGapInput">4. Item-to-Item Gap (D) in inches:</label>
+                <input type="number" id="itemGapInput" value="1.0">
+                <p class="warning-text">Space applied between items WITHIN a solution group.</p>
             </div>
 
             <div class="control-group">
-                <label for="signageToggle">4. Signage Used?</label>
+                <label for="signageToggle">5. Signage Used?</label>
                 <select id="signageToggle">
-                    <option value="false" selected>No</option>
-                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                    <option value="true" selected>Yes</option>
                 </select>
-                <div class="signage-options" id="signageOptions">
-                     <div class="control-group">
-                        <label for="numSigns">Number of Signs to Place:</label>
-                        <input type="number" id="numSigns" value="4" min="0">
-                        <p class="warning-text">Max number of signs is capped at total solution count.</p>
-                    </div>
-                    <div class="control-group">
-                        <label for="itemsPerSign">Items per Sign (for placement logic):</label>
-                        <input type="number" id="itemsPerSign" value="1" min="1">
-                    </div>
-                </div>
+                <p class="warning-text">If 'Yes', a sign and gap are added to the LEFT of the first item in EACH group.</p>
             </div>
-
+            
+            <div class="control-group">
+                <label for="numSigns">Number of Signs Calculated:</label>
+                <input type="text" id="numSigns" value="0" disabled>
+                <p class="warning-text">Count calculated automatically based on Group count and Signage Toggle.</p>
+            </div>
+            
+            <div class="control-group hidden-control">
+                <label for="itemsPerSign">Items per Sign:</label>
+                <input type="number" id="itemsPerSignInput" value="1" disabled>
+            </div>
             <div class="control-group calculate-group">
                 <label for="varB">7. Variable B (Sum of all Solutions):</label>
                 <input type="text" id="varB" value="0" disabled>
@@ -523,32 +556,27 @@
         const edgeFactorSelect = document.getElementById('edgeFactorSelect');
         const varXInput = document.getElementById('varX');
         const varXUnitDisplay = document.getElementById('varXUnit');
-        const varXFractionalDisplay = document.getElementById('varXFractional'); // Fractional display
+        const varXFractionalDisplay = document.getElementById('varXFractional'); 
         const itemWidthsInput = document.getElementById('itemWidthsInput');
         const manualSolutionCountInput = document.getElementById('manualSolutionCount'); 
-        const formulaSelect = document.getElementById('formulaSelect');
-        const visualizeBtn = document.getElementById('visualizeBtn');
-        const visualTable = document.getElementById('visualTable');
-        const tableWrapper = document.getElementById('tableWrapper');
-        const visualContainer = document.getElementById('visualContainer');
+        const numSignsInput = document.getElementById('numSigns'); // Used for display only
+        const signageToggle = document.getElementById('signageToggle'); // Re-enabled
+        const itemGapInput = document.getElementById('itemGapInput'); // NEW Item Gap Input
         
-        // Signage Elements
-        const signageToggle = document.getElementById('signageToggle');
-        const signageOptionsDiv = document.getElementById('signageOptions');
-        const numSignsInput = document.getElementById('numSigns');
-        const itemsPerSignInput = document.getElementById('itemsPerSign');
-
         // Zoom Elements
         const zoomSlider = document.getElementById('zoomSlider');
         const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
         
         let currentZoomLevel = DEFAULT_ZOOM;
         
-        // Helper function to check for narrow mobile screens
+        // Helper function to check for narrow mobile screens (Direct window width check)
         function isNarrowScreen() {
-             // Checking against the max-width in the media query (420px)
-             return window.matchMedia("(max-width: 420px)").matches;
+             return window.innerWidth <= 420;
         }
+
+        // --- Event Listener for window resize to fix mobile display immediately ---
+        window.addEventListener('resize', updateVisualization);
+        // --- END Event Listener ---
         
         /**
          * Converts decimal inches to the nearest fractional representation.
@@ -636,6 +664,9 @@
                 } else if (parentType === 'item-sign-gap') {
                     // Gap label: Inverse X scaling + fixed vertical offset (15px) 
                     transformValue = `scaleX(${inverseScale}) translateY(15px)`;
+                } else if (parentType === 'internal-gap') {
+                    // Internal Gap label: Inverse X scaling + centered vertical offset
+                    transformValue = `scaleX(${inverseScale}) translateY(-50%)`;
                 }
                 // Top-aligned labels (space) default to just scaleX
 
@@ -704,22 +735,22 @@
             return feet * INCHES_PER_FOOT;
         }
 
-        // Toggles visibility of signage options
+        // Toggles visibility of signage options (Now handled implicitly by updateVisualization call)
         function toggleSignageOptions() {
-            const isSignageUsed = signageToggle.value === 'true';
-            signageOptionsDiv.classList.toggle('active', isSignageUsed);
             updateVisualization(); 
         }
-        signageToggle.addEventListener('change', toggleSignageOptions);
-
+        
         // Attach event listeners
-        const inputsToListen = [lengthSourceSelect, varAInput, varCInput, edgeFactorSelect, formulaSelect, numSignsInput, itemsPerSignInput, itemWidthsInput, manualSolutionCountInput];
+        const inputsToListen = [lengthSourceSelect, varAInput, varCInput, edgeFactorSelect, formulaSelect, itemWidthsInput, manualSolutionCountInput, signageToggle, itemGapInput]; // Added itemGapInput
         inputsToListen.forEach(input => input.addEventListener('change', updateVisualization));
         visualizeBtn.addEventListener('click', updateVisualization);
+        
         document.addEventListener('DOMContentLoaded', () => {
-            toggleSignageOptions();
-            resetZoom(); 
-            updateVisualization(); 
+             // Disable obsolete controls
+             document.getElementById('itemsPerSignInput').disabled = true;
+             // Set up initial state
+             updateVisualization(); 
+             resetZoom(); 
         }); 
 
         
@@ -812,12 +843,54 @@
 
 
         /**
+         * Parses the item widths input string into an array of item groups.
+         * The total number of groups must match manualSolutionCount.
+         */
+        function parseItemGroups(inputStr, expectedGroups) {
+            // Split by ';' to define groups
+            const rawGroups = inputStr.split(';');
+            const parsedGroups = [];
+            
+            // Use the expectedGroups count to control the overall loop structure
+            for (let g = 0; g < expectedGroups; g++) {
+                const groupStr = rawGroups[g] ? rawGroups[g].trim() : "";
+                
+                const items = groupStr.split(',').map(itemStr => itemStr.trim());
+                const currentGroup = [];
+
+                // Check if the current group has any valid items
+                let hasValidItems = false;
+                
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    const width = parseFloat(item);
+                    
+                    if (isNaN(width) || width <= 0) continue; 
+                    
+                    // The 'isFirst' flag is true only for the very first valid item in this group
+                    const isFirstValidItem = currentGroup.length === 0;
+
+                    // Store item width and whether it is the item that precedes the sign/gap
+                    currentGroup.push({ width: width, isFirst: isFirstValidItem });
+                    hasValidItems = true;
+                }
+                
+                if (hasValidItems) {
+                    parsedGroups.push(currentGroup);
+                }
+            }
+            
+            // NOTE: The main updateVisualization loop uses itemGroups.length for drawing/spacing calculation.
+            return parsedGroups;
+        }
+
+
+        /**
          * Main function to update the visual representation
          */
         function updateVisualization() {
             visualTable.innerHTML = ''; 
             
-            // Check if we are on a narrow screen to enable content simplification
             const isMobile = isNarrowScreen();
 
             // 1. DETERMINE A (Total Length)
@@ -828,7 +901,7 @@
                 A_feet = SET_LENGTH_FEET;
                 varAInput.disabled = true;
                 varAInput.value = A_feet;
-            } else { // 'custom'
+            } else { 
                 A_feet = parseFloat(varAInput.value);
                 varAInput.disabled = false;
             }
@@ -837,6 +910,13 @@
             const C = parseFloat(varCInput.value);
             const edgeFactor = parseFloat(edgeFactorSelect.value);
             const selectedFormula = formulaSelect.value; 
+            const D = parseFloat(itemGapInput.value) || 0; // NEW: Item-to-Item Gap (D)
+
+            // Check Signage Toggle State
+            const isSignageOn = signageToggle.value === 'true';
+            
+            // 2. GET GROUP COUNT
+            const expectedSolutionGroups = parseInt(manualSolutionCountInput.value) || 0;
 
             // Update A display
             varAUnitDisplay.textContent = `${A_inches.toFixed(2)} inches (Used in calculation)`;
@@ -848,76 +928,60 @@
                 return;
             }
 
-            // Parse item widths (The pattern)
-            const itemWidthsStr = itemWidthsInput.value;
-            const itemWidthsPattern = itemWidthsStr
-                .split(',')
-                .map(w => parseFloat(w.trim()))
-                .filter(w => !isNaN(w) && w > 0); 
+            // Parse item groups based on new structured input
+            const itemGroups = parseItemGroups(itemWidthsInput.value, expectedSolutionGroups);
+            const numSolutionGroups = itemGroups.length;
             
-            const numPatternItems = itemWidthsPattern.length;
-            
-            // Get the total number of solutions to draw/calculate 
-            const numSolutions = parseInt(manualSolutionCountInput.value) || 0;
-            
-            // 2. SIGNAGE LOGIC: Auto-set default numSigns & Calculate Contribution
-            const isSignageUsed = signageToggle.value === 'true';
-            let signageTotalWidth = 0;
-            let numSignsUsedForCalculation = 0;
-            let itemsPerSign = 1;
-
-            if (isSignageUsed) {
-                itemsPerSign = parseInt(itemsPerSignInput.value) || 1;
-                let rawNumSigns = parseInt(numSignsInput.value);
-
-                // --- SET DEFAULT VALUE TO NUM SOLUTIONS IF FIELD IS NOT ACTIVE ---
-                if (document.activeElement !== numSignsInput) {
-                    numSignsInput.value = numSolutions;
-                    rawNumSigns = numSolutions; 
-                }
-
-                // --- STRICT CONSTRAINT ENFORCEMENT ---
-                numSignsUsedForCalculation = Math.min(rawNumSigns, numSolutions);
-                
-                // If the raw input exceeded the max, update the input field to reflect the cap.
-                if (rawNumSigns > numSolutions) {
-                    numSignsInput.value = numSolutions;
-                }
-                
-                // Calculate contribution: Fixed Sign (3") + Fixed Gap (1") for each placed sign
-                const totalSignUnitsForB = numSignsUsedForCalculation; 
-                signageTotalWidth = (totalSignUnitsForB * SIGN_WIDTH_INCHES) + (totalSignUnitsForB * SIGN_ITEM_GAP_INCHES);
-
-            } else {
-                 // Reset the numSigns field visually when toggled off
-                 numSignsInput.value = 0;
+            if (numSolutionGroups !== expectedSolutionGroups) {
+                 console.warn(`Pattern defined ${numSolutionGroups} groups, but expected ${expectedSolutionGroups}. Using ${numSolutionGroups} for calculation.`);
             }
-
-            // 3. CALCULATE B (Sum of all item widths + Signage contribution)
-            let B_itemSum = 0;
             
-            // Sum the item widths based on the requested number of solutions
-            if (numSolutions > 0 && numPatternItems > 0) {
-                 for (let i = 0; i < numSolutions; i++) {
-                     // Use modulo operator to cycle through the pattern
-                     B_itemSum += itemWidthsPattern[i % numPatternItems];
-                 }
-            } else if (numSolutions > 0 && numPatternItems === 0) {
-                 // Error case: Requested solutions but provided no widths
-                 visualTable.innerHTML = '<p style="color:red; padding:10px;"><b>Error:</b> You requested solutions but provided no item widths.</p>';
+            if (numSolutionGroups === 0) {
+                 visualTable.innerHTML = '<p style="color:red; padding:10px;"><b>Error:</b> Please provide at least one valid item width.</p>';
+                 numSignsInput.value = 0;
                  return;
             }
+
+            // 3. CALCULATE B (Sum of all item widths + Signage contribution + Internal Gap width)
+            let B_itemSum = 0;
+            let totalSignsUsed = 0;
+            let totalInternalGapsUsed = 0; 
             
-            // B is the sum of dynamic item widths PLUS fixed sign/gap widths
-            const B_totalWidth = B_itemSum + signageTotalWidth;
+            for (const group of itemGroups) {
+                for (let i = 0; i < group.length; i++) {
+                    const item = group[i];
+                    B_itemSum += item.width;
+                    
+                    // Count Signage if applicable (only before the first item of the group)
+                    if (isSignageOn && item.isFirst) {
+                        totalSignsUsed++;
+                    }
+                    
+                    // Count Internal Gap (D) if this item is NOT the last item in the group
+                    if (i < group.length - 1) {
+                        totalInternalGapsUsed++;
+                    }
+                }
+            }
             
+            // Calculate signage width
+            const signageTotalWidth = isSignageOn ? (totalSignsUsed * (SIGN_WIDTH_INCHES + SIGN_ITEM_GAP_INCHES)) : 0;
+            
+            // Calculate internal gap width
+            const internalGapsTotalWidth = totalInternalGapsUsed * D;
+
+            const B_totalWidth = B_itemSum + signageTotalWidth + internalGapsTotalWidth; // FINAL B CALCULATION
+            
+            // Update disabled sign count display
+            numSignsInput.value = totalSignsUsed;
+
             // Display calculated B in both units
             varBInput.value = B_totalWidth.toFixed(2);
             varBUnitDisplay.textContent = `${convertInchesToFeet(B_totalWidth).toFixed(2)} ft / ${B_totalWidth.toFixed(2)} in`;
 
 
-            // 4. Calculate spacing
-            const result = calculateSpacing(A_inches, B_totalWidth, C, numSolutions, selectedFormula, edgeFactor);
+            // 4. Calculate spacing (X)
+            const result = calculateSpacing(A_inches, B_totalWidth, C, numSolutionGroups, selectedFormula, edgeFactor);
 
             if (result === null) {
                 varXInput.value = 'ERROR';
@@ -938,51 +1002,45 @@
             varXFractionalDisplay.textContent = `Fractional Value: ${fractionalX}`;
 
 
-            // 6. Build the visual elements
-            if (numSolutions === 0) {
-                // No solutions case
-                spaceWidths.forEach(space => {
-                    addVisualElement(space, A_inches, 'space', null, isMobile);
-                });
-            } else {
-                // Solutions exist case
-                const numSpaces = spaceWidths.length;
-                let signsPlaced = 0; 
-                let signedItemsCounter = 0;
-                
-                for (let i = 0; i < numSolutions; i++) {
-                    // Get the size of the current item/solution, cycling through the pattern
-                    const itemWidth = itemWidthsPattern[i % numPatternItems]; 
-                    
-                    // Check if this item/solution gets a sign placed to its LEFT
-                    const shouldPlaceSign = isSignageUsed && (signsPlaced < numSignsUsedForCalculation) && (signedItemsCounter % itemsPerSign === 0);
+            // 6. Build the visual elements (Drawing Loop)
+            const numSpaces = spaceWidths.length;
+            let spaceIndex = 0;
+            
+            for (let i = 0; i < numSolutionGroups; i++) {
+                const group = itemGroups[i];
 
-                    // 6a. Draw the main spacing *before* the item block
-                    if (i < numSpaces) {
-                         addVisualElement(spaceWidths[i], A_inches, 'space', null, isMobile);
-                    }
+                // 6a. Draw the main spacing *before* the item group
+                if (spaceIndex < numSpaces) {
+                     addVisualElement(spaceWidths[spaceIndex], A_inches, 'space', null, isMobile);
+                     spaceIndex++;
+                }
+
+                // 6b. Draw the items and internal gaps within the group
+                for (let j = 0; j < group.length; j++) {
+                    const item = group[j];
                     
-                    // 6b. Draw the Sign (Circle) and Gap
-                    if (shouldPlaceSign) {
-                        // Circle (Sign: 3")
+                    // Draw Signage if applicable (only if the toggle is ON AND it's the first item)
+                    if (isSignageOn && item.isFirst) {
+                        // Sign (3")
                         addVisualElement(SIGN_WIDTH_INCHES, A_inches, 'circle-sign', null, isMobile);
                         
                         // Gap (1")
                         addVisualElement(SIGN_ITEM_GAP_INCHES, A_inches, 'item-sign-gap', null, isMobile);
-                        signsPlaced++;
                     }
 
-                    // 6c. Draw the Item (Rectangle)
-                    // Passing the item label string as the 4th argument
-                    addVisualElement(itemWidth, A_inches, 'rectangle-item', `Item: ${itemWidth.toFixed(2)}"`, isMobile);
+                    // Draw the Item (Rectangle)
+                    addVisualElement(item.width, A_inches, 'rectangle-item', `Item: ${item.width.toFixed(2)}"`, isMobile);
                     
-                    signedItemsCounter++;
+                    // NEW: Draw the internal gap (D) if this item is NOT the last item in the group
+                    if (j < group.length - 1) {
+                         addVisualElement(D, A_inches, 'internal-gap', `D: ${D.toFixed(2)}`, isMobile);
+                    }
                 }
-                
-                // 6d. Add any remaining spaces (the space after the last item)
-                for (let i = numSolutions; i < numSpaces; i++) {
-                    addVisualElement(spaceWidths[i], A_inches, 'space', null, isMobile);
-                }
+            }
+            
+            // 6d. Add any remaining spaces (the space after the last item group)
+            if (spaceIndex < numSpaces) {
+                addVisualElement(spaceWidths[spaceIndex], A_inches, 'space', null, isMobile);
             }
             
             // Ensure zoom is applied immediately after visualization updates
@@ -1009,14 +1067,16 @@
             let labelText;
 
             if (labelOverride) {
-                // Used for Item labels (e.g., "Item: 12.00"")
                 labelText = labelOverride;
             } else if (type === 'circle-sign') {
                  labelText = `Sign: ${SIGN_WIDTH_INCHES.toFixed(0)}"`
             } else if (type === 'item-sign-gap') {
                  labelText = `Gap: ${SIGN_ITEM_GAP_INCHES.toFixed(0)}"`
+            } else if (type === 'internal-gap') { // Internal Gap Label
+                 // Use D: X.XX" or just D: X.X" if it's mobile
+                 labelText = `D: ${isMobile ? widthInches.toFixed(1) : widthInches.toFixed(2)}"`
             } else if (type === 'space') {
-                 // FIX APPLIED HERE: Correctly implement conditional logic for space labels
+                 // **CRITICAL FIX APPLIED HERE:** Use isMobile flag to construct simplified label.
                  if (isMobile) {
                       // Mobile: Show only inches
                       labelText = `${widthInches.toFixed(2)}"`
