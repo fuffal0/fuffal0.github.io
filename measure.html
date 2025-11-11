@@ -167,8 +167,10 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             overflow: auto; 
+            /* REMOVE ABSOLUTE POSITIONING */
             position: relative;
-            padding-top: 70px;
+            /* REMOVE TOP PADDING */
+            padding-top: 20px; 
             user-select: none; 
         }
         .visual-container:active {
@@ -311,18 +313,28 @@
             transform: none; 
         }
         
-        /* Zoom Controls Styling */
+        /* --- Zoom Controls Styling (Now independent of the visualization container) --- */
         .zoom-controls {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
+            /* Inherit the card styling for its own area */
+            padding: 15px 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            /* Reset absolute positioning */
+            position: relative;
+            top: auto; 
+            left: auto;
+            right: auto;
+            /* Flex layout */
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px;
-            background: #f1f1f1;
-            border-radius: 4px;
+            margin-bottom: 20px; /* Space between controls and visual table */
+        }
+        .zoom-controls label {
+             font-weight: 600;
+             font-size: 14px;
+             white-space: nowrap;
         }
         .zoom-controls button {
             padding: 5px 10px;
@@ -338,18 +350,17 @@
         }
 
         /* === Range Slider Styling for Improved Touch === */
-        /* Target the THUMB (the draggable handle) across different browsers */
         #zoomSlider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 25px;   /* Make the thumb wider */
-            height: 25px;  /* Make the thumb taller */
+            width: 25px;   
+            height: 25px; 
             border-radius: 50%;
             background: #007aff;
             cursor: pointer;
             border: 2px solid #fff; 
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-            margin-top: -8px; /* Correctly center the thumb vertically on the track */
+            margin-top: -8px; 
         }
         
         #zoomSlider::-moz-range-thumb {
@@ -360,10 +371,9 @@
             border: 2px solid #fff;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
         }
-
-        /* Target the TRACK (the bar the thumb slides on) for better visual feedback */
+        
         #zoomSlider::-webkit-slider-runnable-track {
-            height: 10px; /* Make the track thicker */
+            height: 10px; 
             border-radius: 5px;
             background: #ccc;
         }
@@ -473,15 +483,15 @@
         <div class="visual-area">
             <h1>Dynamic Spacing Visualization</h1>
 
+            <div class="zoom-controls">
+                <label>Zoom Level:</label>
+                <button onclick="changeZoom(-0.1)">➖</button>
+                <input type="range" id="zoomSlider" min="1" max="5" value="1" step="0.1">
+                <button onclick="changeZoom(0.1)">➕</button>
+                <span id="zoomLevelDisplay">100%</span>
+                <button onclick="resetZoom()">Reset</button>
+            </div>
             <div class="visual-container" id="visualContainer">
-                <div class="zoom-controls">
-                    <label>Zoom Level:</label>
-                    <button onclick="changeZoom(-0.1)">➖</button>
-                    <input type="range" id="zoomSlider" min="1" max="5" value="1" step="0.1">
-                    <button onclick="changeZoom(0.1)">➕</button>
-                    <span id="zoomLevelDisplay">100%</span>
-                    <button onclick="resetZoom()">Reset</button>
-                </div>
                 
                 <div id="tableWrapper" class="table-wrapper">
                     <div id="visualTable" class="table">
@@ -659,8 +669,7 @@
         let scrollLeft = 0;
 
         visualContainer.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.zoom-controls')) return; 
-
+            // NOTE: Since the slider is moved, no need to check e.target.closest('.zoom-controls') anymore
             isDragging = true;
             startX = e.pageX - visualContainer.offsetLeft;
             scrollLeft = visualContainer.scrollLeft;
@@ -1007,12 +1016,12 @@
             } else if (type === 'item-sign-gap') {
                  labelText = `Gap: ${SIGN_ITEM_GAP_INCHES.toFixed(0)}"`
             } else if (type === 'space') {
-                 // FIX APPLIED HERE: Correctly branch based on the isMobile flag
+                 // FIX APPLIED HERE: Correctly implement conditional logic for space labels
                  if (isMobile) {
-                      // Only show inches on narrow screens
+                      // Mobile: Show only inches
                       labelText = `${widthInches.toFixed(2)}"`
                  } else {
-                      // Desktop/Tablet format
+                      // Desktop/Tablet: Show inches and feet
                       labelText = `${widthInches.toFixed(2)}" / ${widthFeet.toFixed(3)}'`
                  }
             } else {
