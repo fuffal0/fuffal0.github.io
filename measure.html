@@ -50,7 +50,7 @@
         }
         /* --- End NEW LAYOUT --- */
         
-        /* === MOBILE FIX: MEDIA QUERY === */
+        /* === MOBILE FIX: MEDIA QUERY for stacking layout === */
         @media (max-width: 768px) {
             .main-app {
                 /* Stack elements vertically */
@@ -60,7 +60,6 @@
             .controls {
                 /* Allow controls to take full width */
                 width: 100%; 
-                /* Remove height restrictions, if any, to ensure all fields are visible */
                 height: auto; 
                 order: 1; /* Place inputs first */
             }
@@ -68,6 +67,16 @@
                 /* Allow visual area to take full width */
                 width: 100%;
                 order: 2; /* Place visualization second */
+            }
+        }
+
+        /* === MOBILE FIX: MEDIA QUERY for cramped text overlap === */
+        @media (max-width: 375px) {
+            /* Targeting all spans in the visualization table */
+            #visualTable span {
+                /* Override the JS-calculated font size for smaller screens */
+                font-size: 8px !important; 
+                padding: 2px;
             }
         }
         /* ============================== */
@@ -322,7 +331,50 @@
         }
         #zoomSlider {
             flex-grow: 1;
+            /* Disable the browser's default scrolling/panning when touching the slider */
+            touch-action: none; 
+            /* Give the input element more height */
+            height: 30px; 
         }
+
+        /* === Range Slider Styling for Improved Touch === */
+        /* Target the THUMB (the draggable handle) across different browsers */
+        #zoomSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;   /* Make the thumb wider */
+            height: 25px;  /* Make the thumb taller */
+            border-radius: 50%;
+            background: #007aff;
+            cursor: pointer;
+            border: 2px solid #fff; 
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            margin-top: -8px; /* Correctly center the thumb vertically on the track */
+        }
+        
+        #zoomSlider::-moz-range-thumb {
+            width: 25px; 
+            height: 25px;
+            border-radius: 50%;
+            background: #007aff;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Target the TRACK (the bar the thumb slides on) for better visual feedback */
+        #zoomSlider::-webkit-slider-runnable-track {
+            height: 10px; /* Make the track thicker */
+            border-radius: 5px;
+            background: #ccc;
+        }
+        
+        #zoomSlider::-moz-range-track {
+            height: 10px;
+            border-radius: 5px;
+            background: #ccc;
+        }
+        /* ================================================= */
+
         #zoomLevelDisplay {
             width: 50px;
             text-align: right;
