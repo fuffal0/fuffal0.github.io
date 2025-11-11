@@ -463,6 +463,7 @@
                 <label for="varX">Variable X (Calculated Space):</label>
                 <input type="text" id="varX" value="0" disabled>
                 <span class="unit-display" id="varXUnit">0.00 ft / 0.00 in</span>
+                <span class="unit-display" id="varXFractional" style="font-weight: 600; color: #3498db; margin-top: 5px;">Fractional Value: 0"</span>
             </div>
             
             <button id="visualizeBtn">Recalculate & Visualize</button>
@@ -512,6 +513,7 @@
         const edgeFactorSelect = document.getElementById('edgeFactorSelect');
         const varXInput = document.getElementById('varX');
         const varXUnitDisplay = document.getElementById('varXUnit');
+        const varXFractionalDisplay = document.getElementById('varXFractional'); // NEW: Fractional display
         const itemWidthsInput = document.getElementById('itemWidthsInput');
         const manualSolutionCountInput = document.getElementById('manualSolutionCount'); 
         const formulaSelect = document.getElementById('formulaSelect');
@@ -537,6 +539,52 @@
              // Checking against the max-width in the media query (420px)
              return window.matchMedia("(max-width: 420px)").matches;
         }
+        
+        /**
+         * Converts decimal inches to the nearest fractional representation.
+         */
+        function decimalToFraction(decimal, denominator = 16) {
+            if (isNaN(decimal)) return 'N/A';
+            
+            // Separate whole number and fraction
+            let whole = Math.floor(decimal);
+            const fractionPart = decimal - whole;
+            
+            // Convert fraction part to the nearest specified denominator
+            let numerator = Math.round(fractionPart * denominator);
+            
+            // Handle rounding up to the next whole number
+            if (numerator >= denominator) {
+                numerator -= denominator;
+                whole += 1;
+            }
+            
+            // Simplify the fraction (e.g., 8/16 becomes 1/2)
+            function simplify(num, den) {
+                let gcd = 0; // Greatest Common Divisor
+                let temp = 0;
+                let a = num;
+                let b = den;
+
+                while (b !== 0) {
+                    temp = b;
+                    b = a % b;
+                    a = temp;
+                }
+                gcd = a;
+
+                return `${num / gcd}/${den / gcd}`;
+            }
+
+            if (numerator === 0) {
+                return `${whole}"`;
+            }
+            
+            const fractionalString = simplify(numerator, denominator);
+            
+            return whole > 0 ? `${whole} ${fractionalString}"` : `${fractionalString}"`;
+        }
+
 
         // --- ZOOM FUNCTIONS ---
         function applyZoom() {
@@ -564,7 +612,6 @@
                     // Only apply the dynamic font size on wider screens (desktop/tablet)
                     span.style.fontSize = `${newFontSize.toFixed(1)}px`;
                 } 
-                // For mobile, the font size is fixed at 8px via CSS media query.
 
                 // Determine the parent element type
                 const parentType = span.parentElement.className;
@@ -866,6 +913,7 @@
             if (result === null) {
                 varXInput.value = 'ERROR';
                 varXUnitDisplay.textContent = '---';
+                varXFractionalDisplay.textContent = 'Fractional Value: N/A';
                 visualTable.innerHTML = '<p style="color:red; padding:10px;"><b>Error:</b> Calculation impossible. Solutions are too wide, or invalid C.</p>';
                 return;
             }
@@ -875,6 +923,10 @@
             // 5. Update the calculated X value on the screen
             varXInput.value = calculatedX.toFixed(2);
             varXUnitDisplay.textContent = `${convertInchesToFeet(calculatedX).toFixed(4)} ft / ${calculatedX.toFixed(2)} in`;
+            
+            // NEW: Display fractional equivalent of X
+            const fractionalX = decimalToFraction(calculatedX, 16); // Using 1/16th inch precision
+            varXFractionalDisplay.textContent = `Fractional Value: ${fractionalX}`;
 
 
             // 6. Build the visual elements
