@@ -152,12 +152,37 @@
             margin-top: -3px;
             font-weight: normal;
         }
+
+        /* --- CAPTIONS/HINTS STYLING --- */
+        /* Static Hints/Info (Light Blue) */
+        .info-text {
+            font-size: 10px;
+            color: #3498db; /* Nice Blue Color */
+            margin-top: -5px;
+            margin-bottom: 5px;
+            font-weight: normal;
+        }
+        /* Warning Text (Soft Orange - used for less critical dynamic status/notes) */
         .warning-text {
             font-size: 10px;
             color: #d35400;
             margin-top: -5px;
             margin-bottom: 5px;
+            font-weight: normal;
         }
+        /* Error Text (Larger, Bold Red) */
+        .error-text {
+            font-size: 12px; /* Increased size */
+            color: #e74c3c; /* Red color for error */
+            margin-top: 5px; /* Added spacing */
+            margin-bottom: 5px;
+            font-weight: bold; /* Increased emphasis */
+            padding: 5px;
+            border: 1px solid #e74c3c;
+            border-radius: 3px;
+            background-color: #fcebeb; /* Light red background */
+        }
+        /* --- END CAPTIONS/HINTS STYLING --- */
 
         /* Visual representation styling */
         .visual-container {
@@ -305,7 +330,7 @@
         }
 
         /* Span inside the new elements (Signs/Items) */
-        .circle-sign span, .rectangle-item span, .item-sign-gap span {
+        .circle-sign span, .rectangle-item span, .item-sign-gap span, .internal-gap span {
             font-size: 10px; 
             color: #333; 
             padding: 2px 4px;
@@ -437,21 +462,21 @@
             </div>
             
             <div class="control-group">
-                <label for="manualSolutionCount">2. Total Number of Solution Groups:</label>
-                <input type="number" id="manualSolutionCount" value="3" min="0">
-                <p class="warning-text">Enter the number of groups you want.</p>
+                <label for="manualSolutionCount">2. Total Number of Solutions:</label>
+                <input type="number" id="manualSolutionCount" min="0">
+                <p class="info-text">Enter the number of groups you want.</p>
             </div>
             
             <div class="control-group">
                 <label for="itemWidthsInput">3. Item Pattern (e.g., 12,20; 5; 3,5):</label>
-                <input type="text" id="itemWidthsInput" value="12,20; 5; 3,5">
-                <p class="warning-text">Enter item widths separated by commas. Use ';' to divide them into groups matching the count above.</p>
+                <input type="text" id="itemWidthsInput">
+                <p class="info-text">Enter item widths separated by commas. Use ';' to divide them into groups matching the count above.</p>
             </div>
             
             <div class="control-group">
                 <label for="itemGapsInput">4. Item-to-Item Gap (D) in in. (e.g., 1.0; 2.5; 1.0):</label>
-                <input type="text" id="itemGapsInput" value="1.0; 1.0; 1.0"> 
-                <p class="warning-text">Enter the gap size (D) for **each solution group**, separated by ';'. If fewer are provided, the last value is reused. The gap is only applied if a group has more than one item.</p>
+                <input type="text" id="itemGapsInput"> 
+                <p id="itemGapWarning" class="info-text">Enter the gap size (D) for **each solution group**, separated by ';'. The gap is only applied if a group has more than one item.</p>
             </div>
 
             <div class="control-group">
@@ -460,13 +485,13 @@
                     <option value="false">No</option>
                     <option value="true" selected>Yes</option>
                 </select>
-                <p class="warning-text">If 'Yes', a sign and gap are added to the LEFT of the first item in EACH group.</p>
+                <p class="info-text">If 'Yes', a sign and gap are added to the LEFT of the first item in EACH group.</p>
             </div>
             
             <div class="control-group">
                 <label for="numSigns">Number of Signs Calculated:</label>
                 <input type="text" id="numSigns" value="0" disabled>
-                <p class="warning-text">Count calculated automatically based on Group count and Signage Toggle.</p>
+                <p class="info-text">Count calculated automatically based on Group count and Signage Toggle.</p>
             </div>
             
             <div class="control-group hidden-control">
@@ -493,13 +518,13 @@
                 <label for="formulaSelect">9. Select Spacing Formula:</label>
                 <select id="formulaSelect">
                     <option value="formula-1">Formula 1: (A - B) / TotalGaps = X</option> 
-                    <option value="formula-2">Formula 2: Fixed C on Ends (Old)</option>
-                    <option value="formula-3">Formula 3: (A - X) / N (Old)</option>
                 </select>
             </div>
+            
             <div class="control-group">
-                <label for="varC">Variable C (Space between Solutions):</label>
-                <input type="number" id="varC" value="4">
+                <label for="varC">Variable C (Number of Spaces between Solutions):</label>
+                <input type="text" id="varC" value="0" disabled>
+                <p class="info-text">Calculated as (Total Solutions - 1). Determines the number of internal X's.</p>
             </div>
             
             <div class="control-group">
@@ -553,7 +578,8 @@
         const varAUnitDisplay = document.getElementById('varAUnitDisplay');
         const varBInput = document.getElementById('varB');
         const varBUnitDisplay = document.getElementById('varBUnit');
-        const varCInput = document.getElementById('varC');
+        const varCInput = document.getElementById('varC'); // Now displays Number of Spaces
+        // const varC_FixedEndInput is REMOVED
         const edgeFactorSelect = document.getElementById('edgeFactorSelect');
         const varXInput = document.getElementById('varX');
         const varXUnitDisplay = document.getElementById('varXUnit');
@@ -563,6 +589,7 @@
         const numSignsInput = document.getElementById('numSigns'); // Used for display only
         const signageToggle = document.getElementById('signageToggle'); // Re-enabled
         const itemGapsInput = document.getElementById('itemGapsInput'); 
+        const itemGapWarning = document.getElementById('itemGapWarning'); // Reference to the warning paragraph
         
         // Zoom Elements
         const zoomSlider = document.getElementById('zoomSlider');
@@ -742,7 +769,8 @@
         }
         
         // Attach event listeners
-        const inputsToListen = [lengthSourceSelect, varAInput, varCInput, edgeFactorSelect, formulaSelect, itemWidthsInput, manualSolutionCountInput, signageToggle, itemGapsInput]; 
+        // NOTE: varC_FixedEndInput is removed from inputsToListen
+        const inputsToListen = [lengthSourceSelect, varAInput, edgeFactorSelect, formulaSelect, itemWidthsInput, manualSolutionCountInput, signageToggle, itemGapsInput]; 
         inputsToListen.forEach(input => input.addEventListener('change', updateVisualization));
         visualizeBtn.addEventListener('click', updateVisualization);
         
@@ -760,8 +788,9 @@
         // -------------------------------------------------------------------
         /**
          * Calculates the array of space widths based on the selected formula and variables.
+         * Note: FixedCEnd parameter has been removed.
          */
-        function calculateSpacing(A_inches, B_totalWidth, C, numSolutions, formulaId, edgeFactorOption) {
+        function calculateSpacing(A_inches, B_totalWidth, numSolutions, formulaId, edgeFactorOption) {
             
             if (B_totalWidth > A_inches) {
                 return null;
@@ -769,6 +798,9 @@
             
             let calculatedX = 0; 
             let spaceWidths = [];
+            
+            // Calculate the number of internal gaps (used for Formula 1)
+            const numInternalGaps = Math.max(0, numSolutions - 1); 
 
             // Determine if we have a fixed edge space, and if so, its value.
             const isFixedEdge = edgeFactorOption === '8in';
@@ -776,6 +808,7 @@
             const edgeFactorValue = isFixedEdge ? 0 : parseFloat(edgeFactorOption);
 
 
+            // Since formulaId is now fixed to "formula-1", we only run this block.
             if (formulaId === "formula-1") {
                 // FORMULA 1: X = (A - B) / TotalGaps
                 
@@ -788,8 +821,6 @@
                 if (remainingWidth < 0) return null;
 
 
-                const numInternalGaps = Math.max(0, numSolutions - 1);
-                
                 // Total segments of X to divide the remaining space by.
                 const totalXSegments = numInternalGaps + (edgeFactorValue * 2);
 
@@ -816,43 +847,8 @@
                      spaceWidths.push(finalEdgeSpace);
                 }
                 
-            } else if (formulaId === "formula-2") {
-                // FORMULA 2: Fixed C inches on the ends, equal spacing in between.
-                
-                const fixedEndSpace = C * 2;
-                const remainingInternalSpace = A_inches - B_totalWidth - fixedEndSpace;
-                
-                if (remainingInternalSpace < 0) return null;
-                
-                const numInternalSpaces = Math.max(0, numSolutions - 1); 
-                
-                const internalSpaceWidth = (numInternalSpaces > 0) 
-                    ? (remainingInternalSpace / numInternalSpaces) 
-                    : 0;
-                
-                spaceWidths = [C]; 
-                for(let i = 0; i < numInternalSpaces; i++) {
-                    spaceWidths.push(internalSpaceWidth); 
-                }
-                spaceWidths.push(C); 
-                calculatedX = internalSpaceWidth; 
-            
-            } else if (formulaId === "formula-3") {
-                // FORMULA 3: (A - X) / N
-                const X_input = parseFloat(varXInput.value); 
-                
-                const workingWidth = A_inches - X_input;
-                const remainingSpace = workingWidth - B_totalWidth;
-
-                if (remainingSpace < 0) return null;
-
-                const maxSpacingPerInternalGap = (numSolutions > 0) ? remainingSpace / numSolutions : remainingSpace;
-                
-                spaceWidths = new Array(numSolutions).fill(maxSpacingPerInternalGap);
-                spaceWidths.push(X_input); 
-                
-                calculatedX = X_input; 
-            }
+            } 
+            // Removed Formula 2 and Formula 3 logic.
             
             // Handle the "no solutions" case
             if (numSolutions === 0) {
@@ -862,7 +858,11 @@
             
             if (spaceWidths.length === 0) return null;
 
-            return { spaceWidths: spaceWidths, calculatedX: calculatedX };
+            return { 
+                spaceWidths: spaceWidths, 
+                calculatedX: calculatedX,
+                numInternalGaps: numInternalGaps 
+            };
         }
 
 
@@ -909,6 +909,21 @@
         }
 
         /**
+         * Counts the number of groups that actually require an item-to-item gap (more than 1 item).
+         * @param {Array<Array<Object>>} itemGroups - The parsed structure of item groups.
+         * @returns {number} The count of groups with 2 or more items.
+         */
+        function countGapsRequired(itemGroups) {
+            let count = 0;
+            for (const group of itemGroups) {
+                if (group.length > 1) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /**
          * Parses the semicolon-separated gap values. Reuses the last value if too few are provided.
          */
         function parseGapValues(inputStr, expectedGroups) {
@@ -923,6 +938,7 @@
 
             for (let i = 0; i < expectedGroups; i++) {
                 // If a value exists, use it; otherwise, use the last valid value or 0.
+                // We ensure it gets a value, even if the user left it blank, so the index matches the group.
                 gapValues.push(rawGaps[i] !== undefined ? rawGaps[i] : lastGap);
             }
             
@@ -937,6 +953,64 @@
             visualTable.innerHTML = ''; 
             
             const isMobile = isNarrowScreen();
+            
+            // ----------------------------------------------------------------------------------
+            // 2. GET GROUP COUNT & PARSE INPUTS
+            // ----------------------------------------------------------------------------------
+            // Default to 0 if input is empty or invalid
+            const manualCount = manualSolutionCountInput.value.trim();
+            const expectedSolutionGroups = (manualCount === "" || isNaN(parseInt(manualCount))) ? 0 : parseInt(manualCount);
+            
+            const itemWidthsInputValue = itemWidthsInput.value;
+            const itemGroups = parseItemGroups(itemWidthsInputValue, expectedSolutionGroups);
+            const numSolutionGroups = itemGroups.length;
+            const gapsActuallyApplied = countGapsRequired(itemGroups); // Count of groups with >1 item
+            
+            // Validation Check: Count of user-provided gap inputs (before reuse logic)
+            const providedGapInputs = itemGapsInput.value.split(';').filter(s => s.trim() !== '').length;
+
+            // --- USER FEEDBACK AND PROHIBITION LOGIC (STRICT) ---
+            itemGapWarning.className = 'info-text'; // Start with the nice blue info class
+            
+            let isInputValid = true;
+            
+            // STRICT PROHIBITION: Check if provided inputs exceed the groups that NEED a gap
+            if (providedGapInputs > gapsActuallyApplied) {
+                 itemGapWarning.className = 'error-text';
+                 let errorMsg = `ERROR: You provided **${providedGapInputs}** gap value(s), but based on your Item Pattern ("${itemWidthsInputValue}"), only **${gapsActuallyApplied}** group(s) require an internal item-to-item gap.`;
+                 errorMsg += `<br>Please provide **${gapsActuallyApplied}** or fewer gap values.`;
+                 itemGapWarning.innerHTML = errorMsg;
+                 isInputValid = false;
+            } else {
+                 let appliedText = gapsActuallyApplied === 1 ? 'gap is' : 'gaps are';
+                 let statusText = providedGapInputs === 0 
+                    ? `(You provided 0 gap values. **${gapsActuallyApplied} ${appliedText} applied** based on the pattern.)`
+                    : providedGapInputs === gapsActuallyApplied 
+                     ? `(You provided ${providedGapInputs} gap value(s), and **${gapsActuallyApplied} ${appliedText} applied**.)`
+                     : `(You provided ${providedGapInputs} gap value(s). **${gapsActuallyApplied} ${appliedText} applied** based on your pattern.)`;
+                 itemGapWarning.innerHTML = `Enter the gap size (D) for **each solution group**, separated by ';'. The gap is only applied if a group has more than one item. ${statusText}`;
+            }
+
+            if (numSolutionGroups === 0) {
+                 visualTable.innerHTML = '<p class="error-text"><b>Error:</b> Please provide at least one valid item width and solution group count.</p>';
+                 numSignsInput.value = 0;
+                 varCInput.value = 0; // Update C (Number of Spaces)
+                 return;
+            }
+            
+            if (!isInputValid) {
+                 // Change the main error text to use the larger error class
+                 visualTable.innerHTML = '<p class="error-text"><b>Error:</b> Invalid input for Item-to-Item Gap (D). Check the error message above.</p>';
+                 varBInput.value = 'N/A';
+                 varXInput.value = 'N/A';
+                 varCInput.value = 'N/A'; // Update C (Number of Spaces) on error
+                 return;
+            }
+
+            // If validation passed, proceed with parsing the gap values needed for calculation
+            const itemGapValues = parseGapValues(itemGapsInput.value, numSolutionGroups); 
+            // --- END PROHIBITION LOGIC ---
+
 
             // 1. DETERMINE A (Total Length)
             const source = lengthSourceSelect.value;
@@ -952,34 +1026,24 @@
             }
             
             const A_inches = convertFeetToInches(A_feet);
-            const C = parseFloat(varCInput.value);
+            // NOTE: Fixed C is no longer taken from an input, as it's determined by Edge Factor.
             const edgeFactorOption = edgeFactorSelect.value; // Store the option string
             const selectedFormula = formulaSelect.value; 
 
             // Check Signage Toggle State
             const isSignageOn = signageToggle.value === 'true';
             
-            // 2. GET GROUP COUNT & PARSE INPUTS
-            const expectedSolutionGroups = parseInt(manualSolutionCountInput.value) || 0;
-            const itemGroups = parseItemGroups(itemWidthsInput.value, expectedSolutionGroups);
-            const itemGapValues = parseGapValues(itemGapsInput.value, itemGroups.length); 
-            const numSolutionGroups = itemGroups.length;
-            
             // Update A display
             varAUnitDisplay.textContent = `${A_inches.toFixed(2)} in. (Used in calculation)`;
 
             if (isNaN(A_feet) || A_feet <= 0) {
-                visualTable.innerHTML = '<p style="color:red; padding:10px;">Please enter a valid value for A (Total Width).</p>';
+                visualTable.innerHTML = '<p class="error-text">Please enter a valid value for A (Total Width).</p>';
                 varBInput.value = 'N/A';
                 varXInput.value = 'N/A';
+                varCInput.value = 'N/A'; // Update C (Number of Spaces) on error
                 return;
             }
             
-            if (numSolutionGroups === 0) {
-                 visualTable.innerHTML = '<p style="color:red; padding:10px;"><b>Error:</b> Please provide at least one valid item width.</p>';
-                 numSignsInput.value = 0;
-                 return;
-            }
 
             // 3. CALCULATE B (Sum of all item widths + Signage contribution + Internal Gap width)
             let B_itemSum = 0;
@@ -1025,19 +1089,24 @@
 
 
             // 4. Calculate spacing (X)
-            const result = calculateSpacing(A_inches, B_totalWidth, C, numSolutionGroups, selectedFormula, edgeFactorOption);
+            // Call calculateSpacing WITHOUT the fixedCEnd parameter
+            const result = calculateSpacing(A_inches, B_totalWidth, numSolutionGroups, selectedFormula, edgeFactorOption);
 
             if (result === null) {
                 varXInput.value = 'ERROR';
                 varXUnitDisplay.textContent = '---';
                 varXFractionalDisplay.textContent = 'Fractional Value: N/A';
-                visualTable.innerHTML = '<p style="color:red; padding:10px;"><b>Error:</b> Calculation impossible. Solutions are too wide, or invalid C.</p>';
+                visualTable.innerHTML = '<p class="error-text"><b>Error:</b> Calculation impossible. Solutions are too wide.</p>';
+                varCInput.value = 'N/A'; // Update C (Number of Spaces) on error
                 return;
             }
 
-            const { spaceWidths, calculatedX } = result;
+            const { spaceWidths, calculatedX, numInternalGaps } = result;
             
-            // 5. Update the calculated X value on the screen
+            // 5a. Update the calculated number of internal spaces (Variable C)
+            varCInput.value = numInternalGaps; 
+
+            // 5b. Update the calculated X value on the screen
             varXInput.value = calculatedX.toFixed(2);
             varXUnitDisplay.textContent = `${convertInchesToFeet(calculatedX).toFixed(4)} ft / ${calculatedX.toFixed(2)} in.`;
             
