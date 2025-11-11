@@ -443,15 +443,15 @@
             </div>
             
             <div class="control-group">
-                <label for="itemWidthsInput">3. Item Pattern (e.g., 12,20; 10; 12,15):</label>
-                <input type="text" id="itemWidthsInput" value="12,20; 10; 12,15">
+                <label for="itemWidthsInput">3. Item Pattern (e.g., 12,20; 5; 3,5):</label>
+                <input type="text" id="itemWidthsInput" value="12,20; 5; 3,5">
                 <p class="warning-text">Enter item widths separated by commas. Use ';' to divide them into groups matching the count above.</p>
             </div>
             
             <div class="control-group">
-                <label for="itemGapInput">4. Item-to-Item Gap (D) in inches.:</label>
-                <input type="number" id="itemGapInput" value="1.0">
-                <p class="warning-text">Space applied between items WITHIN a solution group.</p>
+                <label for="itemGapsInput">4. Item-to-Item Gap (D) in in. (e.g., 1.0; 2.5; 1.0):</label>
+                <input type="text" id="itemGapsInput" value="1.0; 1.0; 1.0"> 
+                <p class="warning-text">Enter the gap size (D) for **each solution group**, separated by ';'. If fewer are provided, the last value is reused. The gap is only applied if a group has more than one item.</p>
             </div>
 
             <div class="control-group">
@@ -482,6 +482,7 @@
             <div class="control-group">
                 <label for="edgeFactorSelect">8. Choose the Edge Factor:</label>
                 <select id="edgeFactorSelect">
+                    <option value="8in">Fixed 8 in.</option>
                     <option value="1">X</option>
                     <option value="0.5" selected>X / 2</option>
                     <option value="0">0 (No End Spacing)</option>
@@ -544,6 +545,7 @@
         const SIGN_WIDTH_INCHES = 3; 
         const SIGN_ITEM_GAP_INCHES = 1; 
         const DEFAULT_ZOOM = 1.0;
+        const FIXED_EDGE_8_INCHES = 8; // NEW CONSTANT for 8-inch edge
 
         // Get references to ALL our HTML elements
         const lengthSourceSelect = document.getElementById('lengthSourceSelect'); 
@@ -560,7 +562,7 @@
         const manualSolutionCountInput = document.getElementById('manualSolutionCount'); 
         const numSignsInput = document.getElementById('numSigns'); // Used for display only
         const signageToggle = document.getElementById('signageToggle'); // Re-enabled
-        const itemGapInput = document.getElementById('itemGapInput'); // NEW Item Gap Input
+        const itemGapsInput = document.getElementById('itemGapsInput'); 
         
         // Zoom Elements
         const zoomSlider = document.getElementById('zoomSlider');
@@ -740,7 +742,7 @@
         }
         
         // Attach event listeners
-        const inputsToListen = [lengthSourceSelect, varAInput, varCInput, edgeFactorSelect, formulaSelect, itemWidthsInput, manualSolutionCountInput, signageToggle, itemGapInput]; // Added itemGapInput
+        const inputsToListen = [lengthSourceSelect, varAInput, varCInput, edgeFactorSelect, formulaSelect, itemWidthsInput, manualSolutionCountInput, signageToggle, itemGapsInput]; 
         inputsToListen.forEach(input => input.addEventListener('change', updateVisualization));
         visualizeBtn.addEventListener('click', updateVisualization);
         
@@ -759,7 +761,7 @@
         /**
          * Calculates the array of space widths based on the selected formula and variables.
          */
-        function calculateSpacing(A_inches, B_totalWidth, C, numSolutions, formulaId, edgeFactor) {
+        function calculateSpacing(A_inches, B_totalWidth, C, numSolutions, formulaId, edgeFactorOption) {
             
             if (B_totalWidth > A_inches) {
                 return null;
@@ -768,27 +770,50 @@
             let calculatedX = 0; 
             let spaceWidths = [];
 
+            // Determine if we have a fixed edge space, and if so, its value.
+            const isFixedEdge = edgeFactorOption === '8in';
+            const fixedEdgeSpace = isFixedEdge ? FIXED_EDGE_8_INCHES : 0;
+            const edgeFactorValue = isFixedEdge ? 0 : parseFloat(edgeFactorOption);
+
+
             if (formulaId === "formula-1") {
                 // FORMULA 1: X = (A - B) / TotalGaps
-                const numInternalGaps = Math.max(0, numSolutions - 1);
-                const totalXSegments = numInternalGaps + (edgeFactor * 2);
-
-                if (totalXSegments <= 0) return null; 
                 
-                calculatedX = (A_inches - B_totalWidth) / totalXSegments;
+                // Calculate the remaining width after subtracting fixed edge spaces (if any)
+                let remainingWidth = A_inches - B_totalWidth;
+                if (isFixedEdge) {
+                    remainingWidth -= (fixedEdgeSpace * 2); 
+                }
+                
+                if (remainingWidth < 0) return null;
+
+
+                const numInternalGaps = Math.max(0, numSolutions - 1);
+                
+                // Total segments of X to divide the remaining space by.
+                const totalXSegments = numInternalGaps + (edgeFactorValue * 2);
+
+                if (totalXSegments <= 0 && remainingWidth > 0) {
+                     // Error if there's remaining space but nowhere to put it
+                     return null;
+                }
+                
+                calculatedX = (totalXSegments > 0) ? (remainingWidth / totalXSegments) : 0;
                 
                 if (calculatedX < 0) return null;
 
-                const edgeSpace = calculatedX * edgeFactor;
+                const dynamicEdgeSpace = calculatedX * edgeFactorValue;
                 
-                spaceWidths.push(edgeSpace);
+                const finalEdgeSpace = isFixedEdge ? fixedEdgeSpace : dynamicEdgeSpace;
+                
+                spaceWidths.push(finalEdgeSpace);
                 
                 for (let i = 0; i < numInternalGaps; i++) {
                     spaceWidths.push(calculatedX);
                 }
                 
-                if (numSolutions > 0 || edgeFactor > 0) {
-                     spaceWidths.push(edgeSpace);
+                if (numSolutions > 0 || finalEdgeSpace > 0) {
+                     spaceWidths.push(finalEdgeSpace);
                 }
                 
             } else if (formulaId === "formula-2") {
@@ -883,6 +908,27 @@
             return parsedGroups;
         }
 
+        /**
+         * Parses the semicolon-separated gap values. Reuses the last value if too few are provided.
+         */
+        function parseGapValues(inputStr, expectedGroups) {
+            const rawGaps = inputStr.split(';').map(gapStr => {
+                const val = parseFloat(gapStr.trim());
+                // Ensure parsed value is a valid non-negative number, default to 0 if invalid
+                return isNaN(val) || val < 0 ? 0 : val;
+            });
+
+            const gapValues = [];
+            const lastGap = rawGaps[rawGaps.length - 1] || 0;
+
+            for (let i = 0; i < expectedGroups; i++) {
+                // If a value exists, use it; otherwise, use the last valid value or 0.
+                gapValues.push(rawGaps[i] !== undefined ? rawGaps[i] : lastGap);
+            }
+            
+            return gapValues;
+        }
+
 
         /**
          * Main function to update the visual representation
@@ -907,16 +953,18 @@
             
             const A_inches = convertFeetToInches(A_feet);
             const C = parseFloat(varCInput.value);
-            const edgeFactor = parseFloat(edgeFactorSelect.value);
+            const edgeFactorOption = edgeFactorSelect.value; // Store the option string
             const selectedFormula = formulaSelect.value; 
-            const D = parseFloat(itemGapInput.value) || 0; // NEW: Item-to-Item Gap (D)
 
             // Check Signage Toggle State
             const isSignageOn = signageToggle.value === 'true';
             
-            // 2. GET GROUP COUNT
+            // 2. GET GROUP COUNT & PARSE INPUTS
             const expectedSolutionGroups = parseInt(manualSolutionCountInput.value) || 0;
-
+            const itemGroups = parseItemGroups(itemWidthsInput.value, expectedSolutionGroups);
+            const itemGapValues = parseGapValues(itemGapsInput.value, itemGroups.length); 
+            const numSolutionGroups = itemGroups.length;
+            
             // Update A display
             varAUnitDisplay.textContent = `${A_inches.toFixed(2)} in. (Used in calculation)`;
 
@@ -925,14 +973,6 @@
                 varBInput.value = 'N/A';
                 varXInput.value = 'N/A';
                 return;
-            }
-
-            // Parse item groups based on new structured input
-            const itemGroups = parseItemGroups(itemWidthsInput.value, expectedSolutionGroups);
-            const numSolutionGroups = itemGroups.length;
-            
-            if (numSolutionGroups !== expectedSolutionGroups) {
-                 console.warn(`Pattern defined ${numSolutionGroups} groups, but expected ${expectedSolutionGroups}. Using ${numSolutionGroups} for calculation.`);
             }
             
             if (numSolutionGroups === 0) {
@@ -943,33 +983,38 @@
 
             // 3. CALCULATE B (Sum of all item widths + Signage contribution + Internal Gap width)
             let B_itemSum = 0;
-            let totalSignsUsed = 0;
-            let totalInternalGapsUsed = 0; 
+            let signageTotalWidth = 0;
+            let internalGapsTotalWidth = 0;
+            let totalSignsUsed = 0; 
             
-            for (const group of itemGroups) {
-                for (let i = 0; i < group.length; i++) {
-                    const item = group[i];
+            for (let i = 0; i < itemGroups.length; i++) {
+                const group = itemGroups[i];
+                const D = itemGapValues[i]; // D value specific to THIS solution group
+
+                // Sum item widths and check for signage
+                for (let j = 0; j < group.length; j++) {
+                    const item = group[j];
                     B_itemSum += item.width;
                     
-                    // Count Signage if applicable (only before the first item of the group)
                     if (isSignageOn && item.isFirst) {
                         totalSignsUsed++;
                     }
-                    
-                    // Count Internal Gap (D) if this item is NOT the last item in the group
-                    if (i < group.length - 1) {
-                        totalInternalGapsUsed++;
-                    }
                 }
+                
+                // CORRECTED LOGIC: Calculate D contribution based on item count in the group
+                const itemsInGroup = group.length;
+                const gapsInGroup = Math.max(0, itemsInGroup - 1);
+                
+                internalGapsTotalWidth += gapsInGroup * D; 
             }
             
-            // Calculate signage width
-            const signageTotalWidth = isSignageOn ? (totalSignsUsed * (SIGN_WIDTH_INCHES + SIGN_ITEM_GAP_INCHES)) : 0;
-            
-            // Calculate internal gap width
-            const internalGapsTotalWidth = totalInternalGapsUsed * D;
+            // Calculate total fixed widths (Signs and Sign-to-Item Gaps)
+            if (isSignageOn) {
+                signageTotalWidth = totalSignsUsed * (SIGN_WIDTH_INCHES + SIGN_ITEM_GAP_INCHES);
+            }
 
-            const B_totalWidth = B_itemSum + signageTotalWidth + internalGapsTotalWidth; // FINAL B CALCULATION
+            // FINAL B CALCULATION
+            const B_totalWidth = B_itemSum + signageTotalWidth + internalGapsTotalWidth; 
             
             // Update disabled sign count display
             numSignsInput.value = totalSignsUsed;
@@ -980,7 +1025,7 @@
 
 
             // 4. Calculate spacing (X)
-            const result = calculateSpacing(A_inches, B_totalWidth, C, numSolutionGroups, selectedFormula, edgeFactor);
+            const result = calculateSpacing(A_inches, B_totalWidth, C, numSolutionGroups, selectedFormula, edgeFactorOption);
 
             if (result === null) {
                 varXInput.value = 'ERROR';
@@ -1007,10 +1052,11 @@
             
             for (let i = 0; i < numSolutionGroups; i++) {
                 const group = itemGroups[i];
+                const D_group = itemGapValues[i]; // Get the specific D for this group
 
                 // 6a. Draw the main spacing *before* the item group
                 if (spaceIndex < numSpaces) {
-                     addVisualElement(spaceWidths[spaceIndex], A_inches, 'space', null, isMobile);
+                     addVisualElement(spaceWidths[spaceIndex], A_inches, 'space', null, isMobile, edgeFactorOption);
                      spaceIndex++;
                 }
 
@@ -1020,26 +1066,28 @@
                     
                     // Draw Signage if applicable (only if the toggle is ON AND it's the first item)
                     if (isSignageOn && item.isFirst) {
-                        // Sign (3")
+                        // Sign (3 in.)
                         addVisualElement(SIGN_WIDTH_INCHES, A_inches, 'circle-sign', null, isMobile);
                         
-                        // Gap (1")
+                        // Gap (1 in.)
                         addVisualElement(SIGN_ITEM_GAP_INCHES, A_inches, 'item-sign-gap', null, isMobile);
                     }
 
                     // Draw the Item (Rectangle)
                     addVisualElement(item.width, A_inches, 'rectangle-item', `Item: ${item.width.toFixed(2)} in.`, isMobile);
                     
-                    // NEW: Draw the internal gap (D) if this item is NOT the last item in the group
+                    // Draw the internal gap (D) if this item is NOT the last item in the group
                     if (j < group.length - 1) {
-                         addVisualElement(D, A_inches, 'internal-gap', `D: ${D.toFixed(2)} in.`, isMobile);
+                         // Use the specific D_group value for the internal gap
+                         addVisualElement(D_group, A_inches, 'internal-gap', `D: ${D_group.toFixed(2)} in.`, isMobile);
                     }
                 }
             }
             
             // 6d. Add any remaining spaces (the space after the last item group)
             if (spaceIndex < numSpaces) {
-                addVisualElement(spaceWidths[spaceIndex], A_inches, 'space', null, isMobile);
+                // Pass edgeFactorOption for correct labeling of fixed 8in space
+                addVisualElement(spaceWidths[spaceIndex], A_inches, 'space', null, isMobile, edgeFactorOption);
             }
             
             // Ensure zoom is applied immediately after visualization updates
@@ -1050,8 +1098,9 @@
          * Helper function to create and add a single element (Space, Item, Sign, Gap) to the table
          * @param {string|null} labelOverride - Custom text for the label (used for Items).
          * @param {boolean} isMobile - Flag to indicate narrow screen mode.
+         * @param {string|null} edgeFactorOption - The selected edge factor option for labeling.
          */
-        function addVisualElement(widthInches, totalWidthInches, type, labelOverride = null, isMobile = false) {
+        function addVisualElement(widthInches, totalWidthInches, type, labelOverride = null, isMobile = false, edgeFactorOption = null) {
             const el = document.createElement('div');
             el.className = type;
             const widthPercentage = (widthInches / totalWidthInches) * 100;
@@ -1075,8 +1124,23 @@
                  // D: X.XX in. or D: X.X in. (simplified on mobile)
                  labelText = `D: ${isMobile ? widthInches.toFixed(1) : widthInches.toFixed(2)} in.`
             } else if (type === 'space') {
-                 // **FINAL FIX: Remove all feet references from the visual space label.**
-                 labelText = `${widthInches.toFixed(2)} in.`
+                 // **SPACE LOGIC:**
+                 
+                 // Check if this space is an edge space in Formula 1 with the 8in option
+                 const isEdgeSpaceFixed = edgeFactorOption === '8in' && (widthInches === FIXED_EDGE_8_INCHES || (widthInches === 0 && edgeFactorOption === '0'));
+
+                 if (isEdgeSpaceFixed) {
+                    if (widthInches === 0) {
+                         labelText = `0 in.`;
+                    } else {
+                         labelText = `Edge: ${FIXED_EDGE_8_INCHES.toFixed(2)} in.`;
+                    }
+                 } else if (widthInches === 0) {
+                     labelText = `0 in.`;
+                 } else {
+                     // Default calculated space (which is X or X/2, or internal C space)
+                     labelText = `${widthInches.toFixed(2)} in.`;
+                 }
                  
                  /*
                  if (!isMobile) {
