@@ -50,7 +50,7 @@
         }
         /* --- End NEW LAYOUT --- */
         
-        /* === MOBILE FIX: MEDIA QUERY for stacking layout === */
+        /* === MOBILE FIX: MEDIA QUERY for stacking layout (Up to 768px wide) === */
         @media (max-width: 768px) {
             .main-app {
                 /* Stack elements vertically */
@@ -70,11 +70,11 @@
             }
         }
 
-        /* === MOBILE FIX: MEDIA QUERY for cramped text overlap === */
-        @media (max-width: 375px) {
+        /* === MOBILE FIX: MEDIA QUERY for cramped text overlap (Up to 420px wide) === */
+        @media (max-width: 420px) {
             /* Targeting all spans in the visualization table */
             #visualTable span {
-                /* Override the JS-calculated font size for smaller screens */
+                /* Aggressively reduce font size to prevent overlap */
                 font-size: 8px !important; 
                 padding: 2px;
             }
