@@ -184,7 +184,6 @@
             width: 100%;
             height: 150px; 
             display: flex;
-            /* CRUCIAL FIX: Align all items to the bottom baseline */
             align-items: flex-end; 
             background-color: #ecf0f1;
             border: 2px solid #bdc3c7;
@@ -434,7 +433,7 @@
             <div class="control-group">
                 <label for="varA">Variable A (Custom Length in Feet):</label>
                 <input type="number" id="varA" value="12">
-                <span class="unit-display" id="varAUnitDisplay">144.00 inches (Used in calculation)</span>
+                <span class="unit-display" id="varAUnitDisplay">144.00 in. (Used in calculation)</span>
             </div>
             
             <div class="control-group">
@@ -450,7 +449,7 @@
             </div>
             
             <div class="control-group">
-                <label for="itemGapInput">4. Item-to-Item Gap (D) in inches:</label>
+                <label for="itemGapInput">4. Item-to-Item Gap (D) in in.:</label>
                 <input type="number" id="itemGapInput" value="1.0">
                 <p class="warning-text">Space applied between items WITHIN a solution group.</p>
             </div>
@@ -477,7 +476,7 @@
             <div class="control-group calculate-group">
                 <label for="varB">7. Variable B (Sum of all Solutions):</label>
                 <input type="text" id="varB" value="0" disabled>
-                <span class="unit-display" id="varBUnit">0.00 ft / 0.00 in</span>
+                <span class="unit-display" id="varBUnit">0.00 ft / 0.00 in.</span>
             </div>
 
             <div class="control-group">
@@ -505,8 +504,8 @@
             <div class="control-group">
                 <label for="varX">Variable X (Calculated Space):</label>
                 <input type="text" id="varX" value="0" disabled>
-                <span class="unit-display" id="varXUnit">0.00 ft / 0.00 in</span>
-                <span class="unit-display" id="varXFractional" style="font-weight: 600; color: #3498db; margin-top: 5px;">Fractional Value: 0"</span>
+                <span class="unit-display" id="varXUnit">0.00 ft / 0.00 in.</span>
+                <span class="unit-display" id="varXFractional" style="font-weight: 600; color: #3498db; margin-top: 5px;">Fractional Value: 0 in.</span>
             </div>
             
             <button id="visualizeBtn">Recalculate & Visualize</button>
@@ -615,12 +614,12 @@
             }
 
             if (numerator === 0) {
-                return `${whole}"`;
+                return `${whole} in.`;
             }
             
             const fractionalString = simplify(numerator, denominator);
             
-            return whole > 0 ? `${whole} ${fractionalString}"` : `${fractionalString}"`;
+            return whole > 0 ? `${whole} ${fractionalString} in.` : `${fractionalString} in.`;
         }
 
 
@@ -919,7 +918,7 @@
             const expectedSolutionGroups = parseInt(manualSolutionCountInput.value) || 0;
 
             // Update A display
-            varAUnitDisplay.textContent = `${A_inches.toFixed(2)} inches (Used in calculation)`;
+            varAUnitDisplay.textContent = `${A_inches.toFixed(2)} in. (Used in calculation)`;
 
             if (isNaN(A_feet) || A_feet <= 0) {
                 visualTable.innerHTML = '<p style="color:red; padding:10px;">Please enter a valid value for A (Total Width).</p>';
@@ -977,7 +976,7 @@
 
             // Display calculated B in both units
             varBInput.value = B_totalWidth.toFixed(2);
-            varBUnitDisplay.textContent = `${convertInchesToFeet(B_totalWidth).toFixed(2)} ft / ${B_totalWidth.toFixed(2)} in`;
+            varBUnitDisplay.textContent = `${convertInchesToFeet(B_totalWidth).toFixed(2)} ft / ${B_totalWidth.toFixed(2)} in.`;
 
 
             // 4. Calculate spacing (X)
@@ -995,7 +994,7 @@
             
             // 5. Update the calculated X value on the screen
             varXInput.value = calculatedX.toFixed(2);
-            varXUnitDisplay.textContent = `${convertInchesToFeet(calculatedX).toFixed(4)} ft / ${calculatedX.toFixed(2)} in`;
+            varXUnitDisplay.textContent = `${convertInchesToFeet(calculatedX).toFixed(4)} ft / ${calculatedX.toFixed(2)} in.`;
             
             // Display fractional equivalent of X
             const fractionalX = decimalToFraction(calculatedX, 16); // Using 1/16th inch precision
@@ -1029,11 +1028,11 @@
                     }
 
                     // Draw the Item (Rectangle)
-                    addVisualElement(item.width, A_inches, 'rectangle-item', `Item: ${item.width.toFixed(2)}"`, isMobile);
+                    addVisualElement(item.width, A_inches, 'rectangle-item', `Item: ${item.width.toFixed(2)} in.`, isMobile);
                     
                     // NEW: Draw the internal gap (D) if this item is NOT the last item in the group
                     if (j < group.length - 1) {
-                         addVisualElement(D, A_inches, 'internal-gap', `D: ${D.toFixed(2)}`, isMobile);
+                         addVisualElement(D, A_inches, 'internal-gap', `D: ${D.toFixed(2)} in.`, isMobile);
                     }
                 }
             }
@@ -1069,21 +1068,23 @@
             if (labelOverride) {
                 labelText = labelOverride;
             } else if (type === 'circle-sign') {
-                 labelText = `Sign: ${SIGN_WIDTH_INCHES.toFixed(0)}"`
+                 labelText = `Sign: ${SIGN_WIDTH_INCHES.toFixed(0)} in.`
             } else if (type === 'item-sign-gap') {
-                 labelText = `Gap: ${SIGN_ITEM_GAP_INCHES.toFixed(0)}"`
+                 labelText = `Gap: ${SIGN_ITEM_GAP_INCHES.toFixed(0)} in.`
             } else if (type === 'internal-gap') { // Internal Gap Label
-                 // Use D: X.XX" or just D: X.X" if it's mobile
-                 labelText = `D: ${isMobile ? widthInches.toFixed(1) : widthInches.toFixed(2)}"`
+                 // D: X.XX in. or D: X.X in. (simplified on mobile)
+                 labelText = `D: ${isMobile ? widthInches.toFixed(1) : widthInches.toFixed(2)} in.`
             } else if (type === 'space') {
-                 // **CRITICAL FIX APPLIED HERE:** Use isMobile flag to construct simplified label.
-                 if (isMobile) {
-                      // Mobile: Show only inches
-                      labelText = `${widthInches.toFixed(2)}"`
-                 } else {
-                      // Desktop/Tablet: Show inches and feet
-                      labelText = `${widthInches.toFixed(2)}" / ${widthFeet.toFixed(3)}'`
+                 // **FINAL FIX: Remove all feet references from the visual space label.**
+                 labelText = `${widthInches.toFixed(2)} in.`
+                 
+                 /*
+                 if (!isMobile) {
+                      // Desktop/Tablet: APPEND the feet measurement if the screen is wide enough
+                      const feetPart = ` / ${widthFeet.toFixed(3)}'`;
+                      labelText += feetPart;
                  }
+                 */
             } else {
                  labelText = `Solution Block`
             }
@@ -1097,7 +1098,7 @@
             }
 
             el.appendChild(span);
-            el.title = `${type}: ${widthInches.toFixed(2)} inches`;
+            el.title = `${type}: ${widthInches.toFixed(2)} in.`;
             visualTable.appendChild(el);
             return el;
         }
