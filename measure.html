@@ -78,10 +78,6 @@
                 font-size: 8px !important; 
                 padding: 2px;
             }
-            /* Hide the feet measurement text on very narrow screens */
-            .feet-unit-mobile-hide {
-                display: none;
-            }
         }
         /* ============================== */
 
@@ -538,6 +534,7 @@
         
         // Helper function to check for narrow mobile screens
         function isNarrowScreen() {
+             // Checking against the max-width in the media query (420px)
              return window.matchMedia("(max-width: 420px)").matches;
         }
 
@@ -554,7 +551,6 @@
             
             // Calculate the desired font size based on zoom level. 
             const baseFontSize = 12; 
-            // Note: For narrow screens, the CSS media query overrides this font size for stability.
             const newFontSize = baseFontSize * Math.sqrt(currentZoomLevel) * 0.8; 
 
             // Target all measurement labels (spans)
@@ -567,13 +563,8 @@
                 if (!isMobile) {
                     // Only apply the dynamic font size on wider screens (desktop/tablet)
                     span.style.fontSize = `${newFontSize.toFixed(1)}px`;
-                } else {
-                    // Force the simplest text for mobile if it's a measurement label
-                    if (span.classList.contains('measurement-label')) {
-                        // This logic is needed if we want to change content dynamically based on JS
-                        // For this specific fix, the CSS handles font size. We just manage the transform.
-                    }
-                }
+                } 
+                // For mobile, the font size is fixed at 8px via CSS media query.
 
                 // Determine the parent element type
                 const parentType = span.parentElement.className;
@@ -890,7 +881,7 @@
             if (numSolutions === 0) {
                 // No solutions case
                 spaceWidths.forEach(space => {
-                    addVisualElement(space, A_inches, 'space', isMobile);
+                    addVisualElement(space, A_inches, 'space', null, isMobile);
                 });
             } else {
                 // Solutions exist case
@@ -907,28 +898,29 @@
 
                     // 6a. Draw the main spacing *before* the item block
                     if (i < numSpaces) {
-                         addVisualElement(spaceWidths[i], A_inches, 'space', isMobile);
+                         addVisualElement(spaceWidths[i], A_inches, 'space', null, isMobile);
                     }
                     
                     // 6b. Draw the Sign (Circle) and Gap
                     if (shouldPlaceSign) {
                         // Circle (Sign: 3")
-                        addVisualElement(SIGN_WIDTH_INCHES, A_inches, 'circle-sign', isMobile);
+                        addVisualElement(SIGN_WIDTH_INCHES, A_inches, 'circle-sign', null, isMobile);
                         
                         // Gap (1")
-                        addVisualElement(SIGN_ITEM_GAP_INCHES, A_inches, 'item-sign-gap', isMobile);
+                        addVisualElement(SIGN_ITEM_GAP_INCHES, A_inches, 'item-sign-gap', null, isMobile);
                         signsPlaced++;
                     }
 
                     // 6c. Draw the Item (Rectangle)
-                    addVisualElement(itemWidth, A_inches, 'rectangle-item', `Item: ${itemWidth.toFixed(2)}`, isMobile);
+                    // Passing the item label string as the 4th argument
+                    addVisualElement(itemWidth, A_inches, 'rectangle-item', `Item: ${itemWidth.toFixed(2)}"`, isMobile);
                     
                     signedItemsCounter++;
                 }
                 
                 // 6d. Add any remaining spaces (the space after the last item)
                 for (let i = numSolutions; i < numSpaces; i++) {
-                    addVisualElement(spaceWidths[i], A_inches, 'space', isMobile);
+                    addVisualElement(spaceWidths[i], A_inches, 'space', null, isMobile);
                 }
             }
             
@@ -938,6 +930,7 @@
 
         /**
          * Helper function to create and add a single element (Space, Item, Sign, Gap) to the table
+         * @param {string|null} labelOverride - Custom text for the label (used for Items).
          * @param {boolean} isMobile - Flag to indicate narrow screen mode.
          */
         function addVisualElement(widthInches, totalWidthInches, type, labelOverride = null, isMobile = false) {
@@ -955,22 +948,21 @@
             let labelText;
 
             if (labelOverride) {
+                // Used for Item labels (e.g., "Item: 12.00"")
                 labelText = labelOverride;
             } else if (type === 'circle-sign') {
                  labelText = `Sign: ${SIGN_WIDTH_INCHES.toFixed(0)}"`
             } else if (type === 'item-sign-gap') {
                  labelText = `Gap: ${SIGN_ITEM_GAP_INCHES.toFixed(0)}"`
             } else if (type === 'space') {
-                 // CRITICAL FIX: Simplify the space label content on mobile
+                 // CRITICAL FIX: Ensure the feet component is completely excluded on mobile
                  if (isMobile) {
+                      // Only show inches on narrow screens
                       labelText = `${widthInches.toFixed(2)}"`
                  } else {
                       // Desktop/Tablet format
                       labelText = `${widthInches.toFixed(2)}" / ${widthFeet.toFixed(3)}'`
                  }
-            } else if (type === 'rectangle-item') {
-                 // Item labels already simplified by labelOverride
-                 labelText = labelOverride + '"'; 
             } else {
                  labelText = `Solution Block`
             }
