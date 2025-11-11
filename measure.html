@@ -513,7 +513,7 @@
         const edgeFactorSelect = document.getElementById('edgeFactorSelect');
         const varXInput = document.getElementById('varX');
         const varXUnitDisplay = document.getElementById('varXUnit');
-        const varXFractionalDisplay = document.getElementById('varXFractional'); // NEW: Fractional display
+        const varXFractionalDisplay = document.getElementById('varXFractional'); // Fractional display
         const itemWidthsInput = document.getElementById('itemWidthsInput');
         const manualSolutionCountInput = document.getElementById('manualSolutionCount'); 
         const formulaSelect = document.getElementById('formulaSelect');
@@ -924,7 +924,7 @@
             varXInput.value = calculatedX.toFixed(2);
             varXUnitDisplay.textContent = `${convertInchesToFeet(calculatedX).toFixed(4)} ft / ${calculatedX.toFixed(2)} in`;
             
-            // NEW: Display fractional equivalent of X
+            // Display fractional equivalent of X
             const fractionalX = decimalToFraction(calculatedX, 16); // Using 1/16th inch precision
             varXFractionalDisplay.textContent = `Fractional Value: ${fractionalX}`;
 
@@ -1007,7 +1007,7 @@
             } else if (type === 'item-sign-gap') {
                  labelText = `Gap: ${SIGN_ITEM_GAP_INCHES.toFixed(0)}"`
             } else if (type === 'space') {
-                 // CRITICAL FIX: Ensure the feet component is completely excluded on mobile
+                 // CRITICAL FIX: Only include inches on mobile
                  if (isMobile) {
                       // Only show inches on narrow screens
                       labelText = `${widthInches.toFixed(2)}"`
